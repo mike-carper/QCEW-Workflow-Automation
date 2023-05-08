@@ -72,7 +72,11 @@ def table_output(# input data
         geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
     
     # Group data by industry
-    grouped_df = geo_df.groupby(industry+freq_cols).agg({'UID':'count','AVGEMP':'sum','TOT_WAGES':'sum'}).reset_index()
+    grouped_df = geo_df.groupby(industry+['Yr','Qtr']).agg({'UID':'count','AVGEMP':'sum','TOT_WAGES':'sum'}).reset_index()
+    
+    if freq=='annual':
+        # Group data by year
+        grouped_df = grouped_df.copy().groupby(industry+['Yr']).agg({'UID':'mean','AVGEMP':'mean','TOT_WAGES':'sum'}).reset_index()
     
     # Screening
     if screen==True:
