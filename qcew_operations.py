@@ -10,16 +10,12 @@ cpi_dict_us = {2000:172.2, 2001:177.1, 2002:179.9, 2003:184.0, 2004:188.9, 2005:
                2009:214.537, 2010:218.056, 2011:224.939, 2012:229.594, 2013:232.957, 2014:236.736, 2015:237.017, 2016:240.007,
                2017:245.12, 2018:251.107, 2019:255.657, 2020:258.811, 2021:270.97, 2022:292.655}
 # Map NAICS 2-digit sectors to Macro Sectors
-macro_dict = {'Mining, Quarrying, and Oil and Gas Extraction':'Industrial','Professional, Scientific, and Technical Services':'Office',
-                  'Unclassified':'Local Services','Accommodation and Food Services':'Local Services','Retail Trade':'Local Services',
-                  'Other Services (except Public Administration)':'Local Services','Construction':'Industrial',
-                  'Real Estate and Rental and Leasing':'Office',
-                  'Administrative and Support and Waste Management and Remediation Services':'Office','Information':'Office',
-                  'Manufacturing':'Industrial','Wholesale Trade':'Industrial','Health Care and Social Assistance':'Institutional',
-                  'Transportation and Warehousing':'Industrial','Educational Services':'Institutional',
-                  'Arts, Entertainment, and Recreation':'Local Services','Management of Companies and Enterprises':'Office',
-                  'Finance and Insurance':'Office','Utilities':'Industrial','Agriculture, Forestry, Fishing and Hunting':'Industrial',
-                  'Public Administration':'Government','Mining, Quarrying, and Oil and Gas Extraction':'Industrial'}
+macro_dict = {'11':'Industrial','21':'Industrial','22':'Industrial','23':'Industrial',
+                  '31':'Industrial','32':'Industrial','33':'Industrial','42':'Industrial',
+                  '44':'Local Services','45':'Local Services','48':'Industrial','49':'Industrial',
+                  '51':'Office','52':'Office','53':'Office','54':'Office','55':'Office','56':'Office',
+                  '61':'Institutional','62':'Institutional','71':'Local Services','72':'Local Services',
+                  '81':'Local Services','99':'Local Services','92':'Government'}
 # Load 2017 to 2022 NAICS definition crosswalk file - file path not applicable to this repository
 xw_1722 = pd.read_excel('../crosswalks/2017_to_2022_NAICS_crosswalk_CLEANED.xlsx')
 xw_1722 = xw_1722.astype(str)
@@ -45,7 +41,7 @@ def clean_data(df=None, ownership='private', industry_focus='all', time_frame=ra
     # Create public and private designations
     df['Ownership'] = df['OWN'].map(own_codes)
     # Create macro sectors
-    df['MACRO_SECTOR'] = df['ECONOMIC_SECTOR'].map(macro_dict)
+    df['MACRO_SECTOR'] = df['NAICS_2'].map(macro_dict)
     # Only keep necessary columns
     if function == 'table':
         df_ = df[['Yr','Qtr','UID','OWN','Ownership','MEEI','MACRO_SECTOR','ECONOMIC_SECTOR','SUBSECTOR','INDUSTRY_GROUP',
