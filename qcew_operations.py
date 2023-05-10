@@ -22,9 +22,6 @@ xw_1722 = xw_1722.astype(str)
 # Load 2017 to 2012 NAICS definition crosswalk file - file path not applicable to this repository
 xw_1712 = pd.read_excel('../crosswalks/2017_to_2012_NAICS_crosswalk_CLEANED.xlsx')
 xw_1712 = xw_1712.astype(str)
-# Load PDR industry list - file path not applicable to this repository
-ind_df = pd.read_excel('../crosswalks/IWG_Comp_Definition_230419.xlsx')
-ind_df = ind_df.astype(str)
 # _______________________________________________________________________________________________________________________________________ #
 
 ### OPERATION FUNCTIONS ###
@@ -176,7 +173,7 @@ def screen_check(df=None, grouped_df=None, industry='ECONOMIC_SECTOR', target_va
     return final_df
 
 # Assigns "PDR" Industrial industry designations based on desired year, crosswalks NAICS definitions to 2017
-def pdr_inds(df=None): 
+def pdr_inds(df=None, ind_df=None): 
     master_df = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())
     ind_6 = ind_df[ind_df['ind_level']=='naics_6']

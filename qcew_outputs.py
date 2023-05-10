@@ -38,6 +38,8 @@ def table_output(# input data
                  geo_level='cd',
                  # '2 digit', '3 digit' or '4 digit' (includes preceeding levels), 'macro sector', 'TOTAL', or 'PDR' (industrial)
                  industry_level='2 digit',
+                 # industry definition list as DF
+                 ind_df=None,
                  # 'annual' or 'quarterly'
                  freq='annual',
                  # 'employment', 'establishments' or 'wages'
