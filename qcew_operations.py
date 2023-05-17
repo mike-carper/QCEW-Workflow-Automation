@@ -4,11 +4,13 @@ import geopandas as gpd
 
 # Map ownership codes to descriptions
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
+
 # Map CPI values to years for inflation adjustment
 # from BLS website R-CPI-U: https://www.bls.gov/cpi/research-series/r-cpi-u-rs-home.htm
 cpi_dict_us = {2000:172.2, 2001:177.1, 2002:179.9, 2003:184.0, 2004:188.9, 2005:195.3, 2006:201.6, 2007:207.342, 2008:215.303,
                2009:214.537, 2010:218.056, 2011:224.939, 2012:229.594, 2013:232.957, 2014:236.736, 2015:237.017, 2016:240.007,
                2017:245.12, 2018:251.107, 2019:255.657, 2020:258.811, 2021:270.97, 2022:292.655}
+
 # Map NAICS 2-digit sectors to Macro Sectors
 macro_dict = {'11':'Industrial','21':'Industrial','22':'Industrial','23':'Industrial',
                   '31':'Industrial','32':'Industrial','33':'Industrial','42':'Industrial',
@@ -16,12 +18,11 @@ macro_dict = {'11':'Industrial','21':'Industrial','22':'Industrial','23':'Indust
                   '51':'Office','52':'Office','53':'Office','54':'Office','55':'Office','56':'Office',
                   '61':'Institutional','62':'Institutional','71':'Local Services','72':'Local Services',
                   '81':'Local Services','99':'Local Services','92':'Government'}
-# Load 2017 to 2022 NAICS definition crosswalk file - file path not applicable to this repository
-xw_1722 = pd.read_excel('../crosswalks/2017_to_2022_NAICS_crosswalk_CLEANED.xlsx')
-xw_1722 = xw_1722.astype(str)
-# Load 2017 to 2012 NAICS definition crosswalk file - file path not applicable to this repository
-xw_1712 = pd.read_excel('../crosswalks/2017_to_2012_NAICS_crosswalk_CLEANED.xlsx')
-xw_1712 = xw_1712.astype(str)
+
+# Load master NAICS crosswalk file
+xw_ALL = pd.read_excel('../crosswalks/master_NAICS_Crosswalk_02_07_12_17_22.xlsx')
+xw_ALL = xw_ALL.astype(str)
+
 # _______________________________________________________________________________________________________________________________________ #
 
 ### OPERATION FUNCTIONS ###
@@ -173,7 +174,7 @@ def screen_check(df=None, grouped_df=None, industry='ECONOMIC_SECTOR', target_va
     return final_df
 
 # Assigns "PDR" Industrial industry designations based on desired year, crosswalks NAICS definitions to 2017
-def pdr_inds(df=None, ind_df=None): 
+def pdr_inds(df=None,ind_df=None): 
     master_df = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())
     ind_6 = ind_df[ind_df['ind_level']=='naics_6']
@@ -182,21 +183,24 @@ def pdr_inds(df=None, ind_df=None):
     for year in year_list:     
         df_yr = df[df['Yr'].astype(int)==year]
         
-        # NAICS crosswalk based on year
-        if year<2012:
+        if year<2002:
             error = 'not available before 2012'
             return error
+        elif year<2007:
+            naics_yr = 2002
+        elif year<2012:
+            naics_yr = 2007
         elif year<2017:
-            df6 = pd.merge(df_yr, xw_1712, how='left', left_on='NAICS_6', right_on='NAICS_12_6')
-            df4 = pd.merge(df_yr, xw_1712, how='left', left_on='NAICS_4', right_on='NAICS_12_4')
+            naics_yr = 2012     
         elif year<2022:
-            df_yr['NAICS_17_6'] = df_yr['NAICS_6']
-            df_yr['NAICS_17_4'] = df_yr['NAICS_4']
-            df4 = df_yr.copy()
-            df6 = df_yr.copy()
+            naics_yr = 2017
         elif year>=2022:
-            df6 = pd.merge(df_yr, xw_1722, how='left', left_on='NAICS_6', right_on='NAICS_22_6')
-            df4 = pd.merge(df_yr, xw_1722, how='left', left_on='NAICS_4', right_on='NAICS_22_4')
+            naics_yr = 2022
+
+        # NAICS crosswalk based on year
+        df6 = pd.merge(df_yr, xw_ALL, how='left', left_on='NAICS_6', right_on=f'NAICS_{str(naics_yr)[2:]}_6')
+        df4 = pd.merge(df_yr, xw_ALL, how='left', left_on='NAICS_4', right_on=f'NAICS_{str(naics_yr)[2:]}_4')
+
         # 6-digit merge with PDR industry list
         dff6 = pd.merge(df6, ind_6, how='inner', left_on='NAICS_17_6', right_on='NAICS6')
         dff6_ = dff6[list(df.columns)+['tier1','tier2','tier3']]

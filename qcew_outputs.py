@@ -7,23 +7,6 @@ import qcew_operations as op
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
 latest_year = 2022
 latest_qtr = 'Q3'
-# Map CPI values to years for inflation adjustment
-# from BLS website R-CPI-U: https://www.bls.gov/cpi/research-series/r-cpi-u-rs-home.htm
-cpi_dict_us = {2000:172.2, 2001:177.1, 2002:179.9, 2003:184.0, 2004:188.9, 2005:195.3, 2006:201.6, 2007:207.342, 2008:215.303,
-               2009:214.537, 2010:218.056, 2011:224.939, 2012:229.594, 2013:232.957, 2014:236.736, 2015:237.017, 2016:240.007,
-               2017:245.12, 2018:251.107, 2019:255.657, 2020:258.811, 2021:270.97, 2022:292.655}
-# Map NAICS 2-digit sectors to Macro Sectors
-macro_dict = {'Mining, Quarrying, and Oil and Gas Extraction':'Industrial','Professional, Scientific, and Technical Services':'Office',
-                  'Unclassified':'Local Services','Accommodation and Food Services':'Local Services','Retail Trade':'Local Services',
-                  'Other Services (except Public Administration)':'Local Services','Construction':'Industrial',
-                  'Real Estate and Rental and Leasing':'Office',
-                  'Administrative and Support and Waste Management and Remediation Services':'Office','Information':'Office',
-                  'Manufacturing':'Industrial','Wholesale Trade':'Industrial','Health Care and Social Assistance':'Institutional',
-                  'Transportation and Warehousing':'Industrial','Educational Services':'Institutional',
-                  'Arts, Entertainment, and Recreation':'Local Services','Management of Companies and Enterprises':'Office',
-                  'Finance and Insurance':'Office','Utilities':'Industrial','Agriculture, Forestry, Fishing and Hunting':'Industrial',
-                  'Public Administration':'Government','Mining, Quarrying, and Oil and Gas Extraction':'Industrial'}
-# _______________________________________________________________________________________________________________________________________ #
 
 ### OUTPUT FUNCTIONS ###
 
