@@ -53,7 +53,7 @@ def table_output(# input data
     # Clean data
     dff = op.clean_data(df, ownership, industry_focus, time_frame, quarters, function='table')
     
-    if industry_level[:3]=='PDR':
+    if industry_level[:4]=='tier':
         dff = op.custom_inds(dff.copy(),ind_df,naics_yr)
     
     if geo==None:

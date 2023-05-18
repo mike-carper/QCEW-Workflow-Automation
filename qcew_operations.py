@@ -13,7 +13,7 @@ macro_dict_num = {'11':'Industrial','21':'Industrial','22':'Industrial','23':'In
                   '61':'Institutional','62':'Institutional','71':'Local Services','72':'Local Services',
                   '81':'Local Services','99':'Local Services','92':'Government'}
 # Load master NAICS crosswalk file
-xw_ALL = pd.read_excel('../crosswalks/master_NAICS_Crosswalk_02_07_12_17_22.xlsx')
+xw_ALL = pd.read_excel('../crosswalks/master_NAICS_Crosswalk.xlsx')
 xw_ALL = xw_ALL.astype(str)
 
 # _______________________________________________________________________________________________________________________________________ #
@@ -71,11 +71,11 @@ def assign_ind(industry_level):
         industry = ['MACRO_SECTOR']
     elif industry_level == 'TOTAL':
         industry = ['Ownership']
-    elif industry_level == 'PDR1':
+    elif industry_level == 'tier1':
         industry = ['tier1']
-    elif industry_level == 'PDR2':
+    elif industry_level == 'tier2':
         industry = ['tier1','tier2']
-    elif industry_level == 'PDR3':
+    elif industry_level == 'tier3':
         industry = ['tier1','tier2','tier3']
 
     return industry
@@ -160,17 +160,46 @@ def screen_check(df=None, grouped_df=None, industry='ECONOMIC_SECTOR', target_va
     return final_df
 
 # make custom - allow fashion industry list, etc.
+def crosswalk(df=None): 
+    master_df = pd.DataFrame()
+    year_list = list(df['Yr'].astype(int).unique())        
+    for year in year_list:     
+        df_yr = df[df['Yr'].astype(int)==year]
+        if year<2002:
+            error = 'not available before 2002'
+            return error
+        elif year<2007:
+            naics_yr = 2002
+        elif year<2012:
+            naics_yr = 2007
+        elif year<2017:
+            naics_yr = 2012     
+        elif year<2022:
+            naics_yr = 2017
+        elif year>=2022:
+            naics_yr = 2022
+        
+        df_ = pd.merge(df_yr, xw_ALL, how='left', left_on=f'NAICS_{str(dig)}', right_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}')
+        df_['NAICS_2'], df_['NAICS_3'] = df_['NAICS_22_2'], df_['NAICS_22_3']
+        df_['NAICS_4'], df_['NAICS_5'], df_['NAICS_6'] = df_['NAICS_22_4'], df_['NAICS_22_5'], df_['NAICS_22_6']
+        dff_ = dff[list(df.columns)]
+        
+        master_df = master_df.append(dff_)
+        
+    return master_df
+        
+# make custom - allow fashion industry list, etc.
 def custom_inds(df=None,ind_df=None,naics_yr=2017): 
     master_df = pd.DataFrame()
+    df_fin = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())
     ind_6 = ind_df[ind_df['ind_level']=='naics_6']
     ind_5 = ind_df[ind_df['ind_level']=='naics_5']
     ind_4 = ind_df[ind_df['ind_level']=='naics_4']
     ind_3 = ind_df[ind_df['ind_level']=='naics_3']
-        
+ 
     for year in year_list:     
         df_yr = df[df['Yr'].astype(int)==year]
-        
         if year<2002:
             error = 'not available before 2002'
             return error
