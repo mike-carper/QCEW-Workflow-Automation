@@ -3,14 +3,19 @@ import geopandas as gpd
 import numpy as np
 import qcew_operations as op
 
-# Map ownership codes to descriptions
+# Fix government double-counting issue with ownership='all'
+# Revise median wage inflation adjustment
+# Automate table styling/formatting
+# Very large employer flag (>10,000 = avg emp)
+# Column with assignments for establishment size (micro business <10, small business 10 - 100, 100 - 1000, 1000 - 5000, 5000+)
+
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
 latest_year = 2022
 latest_qtr = 'Q3'
 
+
 ### OUTPUT FUNCTIONS ###
 
-# Returns table sorted by industry level and timeframe of interest, filtered to geography of interest and screened for disclosure
 def table_output(# input data
                  df=None,
                  # input shapefile (area of interest)
@@ -21,8 +26,10 @@ def table_output(# input data
                  geo_level='cd',
                  # '2 digit', '3 digit' or '4 digit' (includes preceeding levels), 'macro sector', 'TOTAL', or 'PDR' (industrial)
                  industry_level='2 digit',
-                 # industry definition list as DF
+                 # input industry definition file as dataframe
                  ind_df=None,
+                 # naics definition year to be mapped to
+                 naics_yr=2017,
                  # 'annual' or 'quarterly'
                  freq='annual',
                  # 'employment', 'establishments' or 'wages'
@@ -47,7 +54,7 @@ def table_output(# input data
     dff = op.clean_data(df, ownership, industry_focus, time_frame, quarters, function='table')
     
     if industry_level[:3]=='PDR':
-        dff = op.pdr_inds(dff.copy())
+        dff = op.custom_inds(dff.copy(),ind_df,naics_yr)
     
     if geo==None:
         # Geopandas spatial join
@@ -56,7 +63,7 @@ def table_output(# input data
         # Shapeless spatial filter
         geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
     
-    # Group data by industry
+    # Group data by quarter
     grouped_df = geo_df.groupby(industry+['Yr','Qtr']).agg({'UID':'count','AVGEMP':'sum','TOT_WAGES':'sum'}).reset_index()
     
     if freq=='annual':
@@ -73,7 +80,7 @@ def table_output(# input data
     # Convert establishment and employment averages to integers
     final_df[['IND_EST','IND_EMPL']] = np.round_(final_df[['IND_EST','IND_EMPL']])
     
-    # Adjust all wage totals for inflation:
+    # Adjust all wage totals for inflation: REVISE THIS SECTION
     if target_var == 'wages':
         final_df_ = op.inflation_adjustment(final_df)
     
@@ -82,10 +89,7 @@ def table_output(# input data
     
     return table
     
-    # REVISIT INFLATION ADJUSTMENT FOR WAGES
     
-    
-# Returns raw records (NOT SCREENED) to private drive, filtered by geography, industry, timeframe of interest 
 def records_output(# input data
                  df=None,
                  # input shapefile (area of interest)
@@ -104,14 +108,14 @@ def records_output(# input data
                  industry_focus='all'):
     
     # Clean data
-    dff = clean_data(df, ownership, industry_focus, time_frame, quarters, function='records')
+    dff = op.clean_data(df, ownership, industry_focus, time_frame, quarters, function='records')
     
     # Filter to area of interest
     if geo==None:
         # Geopandas spatial join
-        geo_df = spatial_join(dff, shapefile, time_frame)
+        geo_df = op.spatial_join(dff, shapefile)
     else:
         # Shapeless spatial filter
-        geo_df = shapeless_geo_filter(dff, geo_level, geo)
+        geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
     
     return geo_df
