@@ -1,18 +1,11 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import qcew_operations as op
-
-# Fix government double-counting issue with ownership='all'
-# Revise median wage inflation adjustment
-# Automate table styling/formatting
-# Very large employer flag (>10,000 = avg emp)
-# Column with assignments for establishment size (micro business <10, small business 10 - 100, 100 - 1000, 1000 - 5000, 5000+)
+import operations as op
 
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
 latest_year = 2022
 latest_qtr = 'Q3'
-
 
 ### OUTPUT FUNCTIONS ###
 
@@ -29,7 +22,7 @@ def table_output(# input data
                  # input industry definition file as dataframe
                  ind_df=None,
                  # naics definition year to be mapped to
-                 naics_yr=2017,
+                 target_yr=2017,
                  # 'annual' or 'quarterly'
                  freq='annual',
                  # 'employment', 'establishments' or 'wages'
@@ -53,15 +46,21 @@ def table_output(# input data
     # Clean data
     dff = op.clean_data(df, ownership, industry_focus, time_frame, quarters, function='table')
     
-    if industry_level[:4]=='tier':
-        dff = op.custom_inds(dff.copy(),ind_df,naics_yr)
+    # Add custom industry designations if needed
+    if type(ind_df) is pd.core.frame.DataFrame:
+        dff = op.custom_inds(dff.copy(),ind_df,target_yr)
+    else:
+        pass
     
-    if geo==None:
-        # Geopandas spatial join
+    # Filter by area of interest - method depends on inputs
+    if type(shapefile) is gpd.geodataframe.GeoDataFrame:
         geo_df = op.spatial_join(dff, shapefile)
     else:
-        # Shapeless spatial filter
-        geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
+        if geo==None:
+            geo_df = dff.copy()
+        else:
+            # Shapeless spatial filter
+            geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
     
     # Group data by quarter
     grouped_df = geo_df.groupby(industry+['Yr','Qtr']).agg({'UID':'count','AVGEMP':'sum','TOT_WAGES':'sum'}).reset_index()

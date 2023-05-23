@@ -189,7 +189,7 @@ def crosswalk(df=None):
     return master_df
         
 # make custom - allow fashion industry list, etc.
-def custom_inds(df=None,ind_df=None,naics_yr=2017): 
+def custom_inds(df=None,ind_df=None,target_yr=2017): 
     master_df = pd.DataFrame()
     df_fin = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())
@@ -214,41 +214,15 @@ def custom_inds(df=None,ind_df=None,naics_yr=2017):
         elif year>=2022:
             naics_yr = 2022
         
-        dig = 3
+        dig = 2
         for df_ind in [ind_3, ind_4, ind_5, ind_6]:
-            df_ = pd.merge(df_yr, xw_ALL, how='left', left_on=f'NAICS_{str(dig)}', right_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}')
-            dff = pd.merge(df_, df_ind, how='inner', left_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}', right_on=f'NAICS{str(dig)}')
-            dff_ = dff[list(df.columns)+['tier1','tier2','tier3']]
-            df_fin = df_fin.append(dff_).drop_duplicates()
             dig+=1
+            if df_ind.shape[0]>0:
+                df_ = pd.merge(df_yr, xw_ALL, how='left', left_on=f'NAICS_{str(dig)}', right_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}')
+                dff = pd.merge(df_, df_ind, how='inner', left_on=f'NAICS_{str(target_yr)[2:]}_{str(dig)}', right_on=f'NAICS{str(dig)}')
+                dff_ = dff[list(df.columns)+['tier1','tier2','tier3']].drop_duplicates()
+                df_fin = df_fin.append(dff_)
         
-        master_df = master_df.append(df_fin)
-        
-#         # NAICS crosswalk based on year
-#         df6 = pd.merge(df_yr, xw_ALL, how='left', left_on='NAICS_6', right_on=f'NAICS_{str(naics_yr)[2:]}_6')
-#         df4 = pd.merge(df_yr, xw_ALL, how='left', left_on='NAICS_4', right_on=f'NAICS_{str(naics_yr)[2:]}_4')
-
-#         # 6-digit merge with PDR industry list
-#         dff6 = pd.merge(df6, ind_6, how='inner', left_on=f'NAICS_{str(map_yr)[2:]}_6', right_on='NAICS6')
-#         dff6_ = dff6[list(df.columns)+['tier1','tier2','tier3']]
-#         # 4-digit merge
-#         dff4 = pd.merge(df4, ind_4, how='inner', left_on=f'NAICS_{str(map_yr)[2:]}_4', right_on='NAICS4')
-#         dff4_ = dff4[list(df.columns)+['tier1','tier2','tier3']]
-#         # concatenate
-#         df_fin = pd.concat([dff6_, dff4_]).drop_duplicates()
-#         # append
-#         master_df = master_df.append(df_fin)
+        master_df = master_df.append(df_fin).drop_duplicates()
     
     return master_df
-
-
-### UNDER CONSTRUCTION:
-
-# def employer_size_cols(df=None, industry_level, target_var, freq, ownership, industry_focus):
-#     bins = [0, 11, 101, 1001, np.inf]
-#     names = ['0-10','11-100','101-1000','1001+']
-#     industry = assign_ind(industry_level)
-#     df['Employer_Sizes'] = pd.cut(df['AVGEMP'], bins, labels=names)
-#     table = pd.pivot_table(df, values='UID', index=industry, columns=['Employer_Sizes'], aggfunc=np.count).reset_index()
-    
-#     return table
