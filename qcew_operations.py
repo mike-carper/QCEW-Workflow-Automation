@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 
+latest_year = 2023
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
 cpi_dict_us = {2000:172.2, 2001:177.1, 2002:179.9, 2003:184.0, 2004:188.9, 2005:195.3, 2006:201.6, 2007:207.342, 2008:215.303,
                2009:214.537, 2010:218.056, 2011:224.939, 2012:229.594, 2013:232.957, 2014:236.736, 2015:237.017, 2016:240.007,
@@ -15,6 +16,11 @@ macro_dict_num = {'11':'Industrial','21':'Industrial','22':'Industrial','23':'In
 # Load master NAICS crosswalk file
 xw_ALL = pd.read_excel('../crosswalks/master_NAICS_Crosswalk.xlsx')
 xw_ALL = xw_ALL.astype(str)
+# Load list of 2022 NAICS codes and names
+naics_names = pd.read_excel('../crosswalks/2022_NAICS_List.xlsx')
+naics_names = naics_names.astype(str)
+naics_names_ind = naics_names.set_index('2022 NAICS US Code')
+naics_name_dict = naics_names_ind.T.to_dict('records')[0]
 
 # _______________________________________________________________________________________________________________________________________ #
 
@@ -36,7 +42,8 @@ def clean_data(df=None, ownership='private', industry_focus='all', time_frame=ra
     # Only keep necessary columns
     if function == 'table':
         df_ = df[['Yr','Qtr','UID','OWN','Ownership','MEEI','MACRO_SECTOR','ECONOMIC_SECTOR','SUBSECTOR','INDUSTRY_GROUP',
-                  'NAICS','NAICS_2','NAICS_3','NAICS_4','NAICS_5','NAICS_6','AVGEMP','TOT_WAGES','LON','LAT']]
+                  'NAICS','NAICS_2','NAICS_3','NAICS_4','NAICS_5','NAICS_6','AVGEMP','TOT_WAGES','LON','LAT','CD','CENSUS_TRACT_2020',
+                  'NTA_20','UIZIP','BBL']]
     elif function == 'records':
         df_ = df.copy()
     # Remove HQs to prevent double counts, focus on public, private or both ownerships
@@ -63,22 +70,36 @@ def assign_ind(industry_level):
     # industry-level variable(s) for groupby
     if industry_level == '2 digit':
         industry = ['ECONOMIC_SECTOR']
+        ind_level = '2'
     elif industry_level == '3 digit':
         industry = ['ECONOMIC_SECTOR','SUBSECTOR']
+        ind_level = '3'
     elif industry_level == '4 digit':
         industry = ['ECONOMIC_SECTOR','SUBSECTOR','INDUSTRY_GROUP']
+        ind_level = '4'
+    elif industry_level == '5 digit':
+        industry = ['ECONOMIC_SECTOR','SUBSECTOR','INDUSTRY_GROUP','NAICS_INDUSTRY']
+        ind_level = '5'
+    elif industry_level == '6 digit':
+        industry = ['ECONOMIC_SECTOR','SUBSECTOR','INDUSTRY_GROUP','NAICS_INDUSTRY','NATIONAL_INDUSTRY']
+        ind_level = '6'
     elif industry_level == 'macro sector':
         industry = ['MACRO_SECTOR']
+        ind_level = '1'
     elif industry_level == 'TOTAL':
         industry = ['Ownership']
+        ind_level = '0'
     elif industry_level == 'tier1':
         industry = ['tier1']
+        ind_level = '0'
     elif industry_level == 'tier2':
         industry = ['tier1','tier2']
+        ind_level = '0'
     elif industry_level == 'tier3':
         industry = ['tier1','tier2','tier3']
+        ind_level = '0'
 
-    return industry
+    return industry, ind_level
 
 def assign_targ(target_var):
     # output variable (establishment, employment or wages)
@@ -100,8 +121,7 @@ def assign_freq_cols(freq):
         
     return freq_cols
     
-def spatial_join(df=None, shapefile=None):
-    time_frame = list(df['Yr'].astype(int).unique())
+def spatial_join(df=None, time_frame=range(2000,2023), shapefile=None):
     # create master GeoDataFrame
     geo_df = gpd.GeoDataFrame()
     # set input shapefile CRS to lat./long.
@@ -158,9 +178,9 @@ def screen_check(df=None, grouped_df=None, industry='ECONOMIC_SECTOR', target_va
         final_df = df_ind[(df_ind['EMP80CHECK']==0)&(df_ind['IND_EST']>=3)]  
         
     return final_df
-
-# make custom - allow fashion industry list, etc.
-def crosswalk(df=None): 
+        
+# crosswalk non-custom industries over time
+def crosswalk(df=None,ind_level='4',target_yr=2022): 
     master_df = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())        
     for year in year_list:     
@@ -168,54 +188,62 @@ def crosswalk(df=None):
         if year<2002:
             error = 'not available before 2002'
             return error
-        elif year<2007:
+        elif (year>=2002 and year<2007):
             naics_yr = 2002
-        elif year<2012:
+        elif (year>=2007 and year<2012):
             naics_yr = 2007
-        elif year<2017:
+        elif (year>=2012 and year<2017):
             naics_yr = 2012     
-        elif year<2022:
+        elif (year>=2017 and year<2022):
             naics_yr = 2017
         elif year>=2022:
             naics_yr = 2022
         
-        df_ = pd.merge(df_yr, xw_ALL, how='left', left_on=f'NAICS_{str(dig)}', right_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}')
-        df_['NAICS_2'], df_['NAICS_3'] = df_['NAICS_22_2'], df_['NAICS_22_3']
-        df_['NAICS_4'], df_['NAICS_5'], df_['NAICS_6'] = df_['NAICS_22_4'], df_['NAICS_22_5'], df_['NAICS_22_6']
-        dff_ = dff[list(df.columns)]
-        
-        master_df = master_df.append(dff_)
+        df_ = pd.merge(df_yr,xw_ALL,how='left',left_on=f'NAICS_{ind_level}',right_on=f'NAICS_{str(naics_yr)[2:]}_{ind_level}')
+        dff_ = df_[list(df.columns)+[f'NAICS_{str(target_yr)[2:]}_{ind_level}']]
+        dff_['ECONOMIC_SECTOR'] = dff_[f'NAICS_{str(target_yr)[2:]}_{ind_level}'].str[:2].map(naics_name_dict)
+        dff_['SUBSECTOR'] = dff_[f'NAICS_{str(target_yr)[2:]}_{ind_level}'].str[:3].map(naics_name_dict)
+        if int(ind_level)>=4:
+            dff_['INDUSTRY_GROUP'] = dff_[f'NAICS_{str(target_yr)[2:]}_{ind_level}'].str[:4].map(naics_name_dict)
+        if int(ind_level)>=5:
+            dff_['NAICS_INDUSTRY'] = dff_[f'NAICS_{str(target_yr)[2:]}_{ind_level}'].str[:5].map(naics_name_dict)
+        if int(ind_level)==6:
+            dff_['NATIONAL_INDUSTRY'] = dff_[f'NAICS_{str(target_yr)[2:]}_{ind_level}'].map(naics_name_dict)
+        dfff = dff_.drop_duplicates()
+        master_df = master_df.append(dfff)
         
     return master_df
-        
+
 # make custom - allow fashion industry list, etc.
 def custom_inds(df=None,ind_df=None,target_yr=2017): 
     master_df = pd.DataFrame()
     df_fin = pd.DataFrame()
     year_list = list(df['Yr'].astype(int).unique())
+    
     ind_6 = ind_df[ind_df['ind_level']=='naics_6']
     ind_5 = ind_df[ind_df['ind_level']=='naics_5']
     ind_4 = ind_df[ind_df['ind_level']=='naics_4']
     ind_3 = ind_df[ind_df['ind_level']=='naics_3']
+    ind_2 = ind_df[ind_df['ind_level']=='naics_2']
  
     for year in year_list:     
         df_yr = df[df['Yr'].astype(int)==year]
         if year<2002:
             error = 'not available before 2002'
             return error
-        elif year<2007:
+        elif (year>=2002 and year<2007):
             naics_yr = 2002
-        elif year<2012:
+        elif (year>=2007 and year<2012):
             naics_yr = 2007
-        elif year<2017:
+        elif (year>=2012 and year<2017):
             naics_yr = 2012     
-        elif year<2022:
+        elif (year>=2017 and year<2022):
             naics_yr = 2017
         elif year>=2022:
             naics_yr = 2022
         
         dig = 2
-        for df_ind in [ind_3, ind_4, ind_5, ind_6]:
+        for df_ind in [ind_2, ind_3, ind_4, ind_5, ind_6]:
             dig+=1
             if df_ind.shape[0]>0:
                 df_ = pd.merge(df_yr, xw_ALL, how='left', left_on=f'NAICS_{str(dig)}', right_on=f'NAICS_{str(naics_yr)[2:]}_{str(dig)}')

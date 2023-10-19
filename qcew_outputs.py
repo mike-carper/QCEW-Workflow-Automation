@@ -1,11 +1,12 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import operations as op
+import qcew_operations as op
 
 own_codes = {1:'public', 2:'public', 3:'public', 5:'private'}
-latest_year = 2022
-latest_qtr = 'Q3'
+latest_year = 2023
+latest_qtr = 'Q1'
+
 
 ### OUTPUT FUNCTIONS ###
 
@@ -17,12 +18,12 @@ def table_output(# input data
                  geo=None,
                  # 'cd', 'tract', 'BBL', 'nta', etc.
                  geo_level='cd',
-                 # '2 digit', '3 digit' or '4 digit' (includes preceeding levels), 'macro sector', 'TOTAL', or 'PDR' (industrial)
+                 # 2, 3, 4, 5 or '6 digit', 'macro sector', 'TOTAL', or 'tier1/2/3' (custom industries)
                  industry_level='2 digit',
                  # input industry definition file as dataframe
                  ind_df=None,
                  # naics definition year to be mapped to
-                 target_yr=2017,
+                 target_yr=2022,
                  # 'annual' or 'quarterly'
                  freq='annual',
                  # 'employment', 'establishments' or 'wages'
@@ -39,7 +40,7 @@ def table_output(# input data
                  screen=True):
     
     # Assign variables based on inputs
-    industry = op.assign_ind(industry_level)
+    industry, ind_level = op.assign_ind(industry_level)
     target = op.assign_targ(target_var)
     freq_cols = op.assign_freq_cols(freq)
     
@@ -50,11 +51,13 @@ def table_output(# input data
     if type(ind_df) is pd.core.frame.DataFrame:
         dff = op.custom_inds(dff.copy(),ind_df,target_yr)
     else:
-        pass
+        if int(ind_level)>=3:
+            if time_frame[0]<2022:
+                dff = op.crosswalk(dff.copy(),ind_level,target_yr)
     
     # Filter by area of interest - method depends on inputs
     if type(shapefile) is gpd.geodataframe.GeoDataFrame:
-        geo_df = op.spatial_join(dff, shapefile)
+        geo_df = op.spatial_join(dff, time_frame, shapefile)
     else:
         if geo==None:
             geo_df = dff.copy()
@@ -112,7 +115,7 @@ def records_output(# input data
     # Filter to area of interest
     if geo==None:
         # Geopandas spatial join
-        geo_df = op.spatial_join(dff, shapefile)
+        geo_df = op.spatial_join(dff, time_frame, shapefile)
     else:
         # Shapeless spatial filter
         geo_df = op.shapeless_geo_filter(dff, geo_level, geo)
