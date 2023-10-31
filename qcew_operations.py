@@ -153,9 +153,10 @@ def shapeless_geo_filter(df=None, geo_level='cd', geo=None):
     return geo_df
 
 def inflation_adjustment(df=None):
-    for i, row in df.iterrows():
-        year = int(df.loc[i]['Yr'])
-        df[i:i+1]['IND_WAGES'] = df.loc[i]['IND_WAGES']*(cpi_dict_us[latest_year]/cpi_dict_us[year])
+    df['CPI'] = df['Yr'].astype(int).map(cpi_dict_us)
+    df['IND_WAGES_adj'] = df['IND_WAGES']*(cpi_dict_us[latest_year]/df['CPI'])
+    del df['IND_WAGES'], df['CPI']
+    df.rename(columns={'IND_WAGES_adj':'IND_WAGES'},inplace=True)
     
     return df
 
