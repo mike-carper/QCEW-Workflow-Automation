@@ -29,7 +29,7 @@ def table_output(# input data
                  # 'employment', 'establishments' or 'wages'
                  target_var='employment',
                  # range(x,y)
-                 time_frame=range(2000,2023),
+                 time_frame=range(2000,2024),
                  # list of quarters to be included
                  quarters=['Q1','Q2','Q3','Q4'],
                  # 'private', 'public' or 'all'
@@ -101,7 +101,7 @@ def records_output(# input data
                  # input area of interest - list of geos
                  geo=None,
                  # range(x,y)
-                 time_frame=range(2000,2023),
+                 time_frame=range(2000,2024),
                  # list of quarters to be included
                  quarters=['Q1','Q2','Q3','Q4'],
                  # 'private', 'public' or 'all'

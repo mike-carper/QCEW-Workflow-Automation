@@ -26,7 +26,7 @@ naics_name_dict = naics_names_ind.T.to_dict('records')[0]
 
 ### OPERATION FUNCTIONS ###
 
-def clean_data(df=None, ownership='private', industry_focus='all', time_frame=range(2000,2023), quarters=['Q1','Q2','Q3','Q4'],
+def clean_data(df=None, ownership='private', industry_focus='all', time_frame=range(2000,2024), quarters=['Q1','Q2','Q3','Q4'],
                function='table'):
     # Remove rows without NAICS codes
     df = df[~df['ECONOMIC_SECTOR'].isna()].copy()
@@ -121,7 +121,7 @@ def assign_freq_cols(freq):
         
     return freq_cols
     
-def spatial_join(df=None, time_frame=range(2000,2023), shapefile=None):
+def spatial_join(df=None, time_frame=range(2000,2024), shapefile=None):
     # create master GeoDataFrame
     geo_df = gpd.GeoDataFrame()
     # set input shapefile CRS to lat./long.
